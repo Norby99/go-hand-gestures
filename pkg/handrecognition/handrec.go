@@ -2,6 +2,7 @@ package handrec
 
 import (
 	"image"
+	"image/color"
 
 	cv "gocv.io/x/gocv"
 )
@@ -22,31 +23,18 @@ func Detect(cap cv.Mat) (HandPos, error) {
 	return HandPos{}, nil
 }
 
-/*
-	per ora sto cercando di tradurre sto bocchino fatto in python in go
-	https://github.com/madhav727/medium/blob/master/finger_counting_video.py
-	se trovate qualcosa di meglio ditelo non fate gli infami
-*/
-
 // SkinMask
-/* note:
-Skin mask dovrebbe "rimuovere" la pelle o texture inutili lasciando una imamgine
-in bianco e nero con la mano più facilmente visibile.
-*/
 func SkinMask(img cv.Mat) cv.Mat {
-	hueSat := cv.NewMat()
-	cv.CvtColor(img, &hueSat, cv.ColorRGBToHSV)
-	skinRegionHS := cv.NewMat()
-	// TODO
-	/*
-		issue with RGB values to be converted to BGR values.
-		lower and upper should also be made constants (?)
-	*/
-	lower, _ := cv.NewMatFromBytes(1, 3, cv.MatTypeCV8U, []byte{0, 48, 80})
-	upper, _ := cv.NewMatFromBytes(1, 3, cv.MatTypeCV8U, []byte{20, 255, 255})
-	cv.InRange(hueSat, lower, upper, &skinRegionHS)
-	blur := cv.NewMat()
-	cv.Blur(skinRegionHS, &blur, image.Point{2, 2})
-	cv.Threshold(blur, &img, 0, 255, cv.ThresholdBinary)
+	return cv.NewMat()
+}
+
+// SkinColorSampler draws two rectangles on the given image.
+func SkinColorSampler(img cv.Mat) cv.Mat {
+	height := img.Size()[1]
+	width := img.Size()[0]
+	rect1 := image.Rect(width/5, height/2, (width/5)+20, (height/2)+20)
+	rect2 := image.Rect(width/5, height/3, (width/5)+20, (height/3)+20)
+	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 3)
+	cv.Rectangle(&img, rect2, color.RGBA{238, 11, 11, 1}, 3)
 	return img
 }
