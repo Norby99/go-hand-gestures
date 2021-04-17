@@ -30,14 +30,14 @@ func SkinMask(img cv.Mat) cv.Mat {
 }
 
 // SkinColorSampler draws two rectangles on the given image.
-func SkinColorSampler(img cv.Mat) cv.Mat {
+func DetectSkinColor(img cv.Mat) cv.Mat {
 	r1Height := img.Size()[1] / 2
 	r2Height := img.Size()[1] / 3
 	rWidth := img.Size()[0] / 5
 
 	rect1 := image.Rect(rWidth, r1Height, rWidth+20, r1Height+20)
 	rect2 := image.Rect(rWidth, r2Height, rWidth+20, r2Height+20)
-	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 3)
+	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 1)
 	cv.Rectangle(&img, rect2, color.RGBA{238, 11, 11, 1}, 3)
 
 	hueSat := cv.NewMat()
@@ -57,10 +57,8 @@ func SkinColorSampler(img cv.Mat) cv.Mat {
 	vLowThreshold := math.Min(hueMeanSample1.Val3, hueMeanSample2.Val3) - 80
 	vHighThreshold := math.Max(hueMeanSample1.Val3, hueMeanSample2.Val3) + 30
 
-	scalar1 := cv.NewScalar(hLowThreshold, sLowThreshold, vLowThreshold, 1)
-	scalar2 := cv.NewScalar(hHighThreshold, sHighThreshold, vHighThreshold, 1)
-	cv.InRange(hueSat,
-		cv.NewMatFromScalar(scalar1, cv.MatTypeCV64F),
-		cv.NewMatFromScalar(scalar2, cv.MatTypeCV64F), &img)
+	scalar1 := cv.NewScalar(hLowThreshold, sLowThreshold, vLowThreshold, 0)
+	scalar2 := cv.NewScalar(hHighThreshold, sHighThreshold, vHighThreshold, 0)
+	cv.InRangeWithScalar(hueSat, scalar1, scalar2, &img)
 	return img
 }
