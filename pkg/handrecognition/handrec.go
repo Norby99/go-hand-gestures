@@ -3,6 +3,7 @@ package handrec
 import (
 	"image"
 	"image/color"
+	"math"
 
 	cv "gocv.io/x/gocv"
 )
@@ -30,11 +31,36 @@ func SkinMask(img cv.Mat) cv.Mat {
 
 // SkinColorSampler draws two rectangles on the given image.
 func SkinColorSampler(img cv.Mat) cv.Mat {
-	height := img.Size()[1]
-	width := img.Size()[0]
-	rect1 := image.Rect(width/5, height/2, (width/5)+20, (height/2)+20)
-	rect2 := image.Rect(width/5, height/3, (width/5)+20, (height/3)+20)
+	r1Height := img.Size()[1] / 2
+	r2Height := img.Size()[1] / 3
+	rWidth := img.Size()[0] / 5
+
+	rect1 := image.Rect(rWidth, r1Height, rWidth+20, r1Height+20)
+	rect2 := image.Rect(rWidth, r2Height, rWidth+20, r2Height+20)
 	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 3)
 	cv.Rectangle(&img, rect2, color.RGBA{238, 11, 11, 1}, 3)
+
+	hueSat := cv.NewMat()
+	cv.CvtColor(img, &hueSat, cv.ColorBGRToHSV)
+
+	sample1 := hueSat.Region(rect1)
+	sample2 := hueSat.Region(rect2)
+
+	// need to fix threshold values
+	hueMeanSample1 := sample1.Mean()
+	hueMeanSample2 := sample2.Mean()
+
+	hLowThreshold := math.Min(hueMeanSample1.Val1, hueMeanSample2.Val1) - 80
+	hHighThreshold := math.Max(hueMeanSample1.Val1, hueMeanSample2.Val1) + 30
+	sLowThreshold := math.Min(hueMeanSample1.Val2, hueMeanSample2.Val2) - 80
+	sHighThreshold := math.Max(hueMeanSample1.Val2, hueMeanSample2.Val2) + 30
+	vLowThreshold := math.Min(hueMeanSample1.Val3, hueMeanSample2.Val3) - 80
+	vHighThreshold := math.Max(hueMeanSample1.Val3, hueMeanSample2.Val3) + 30
+
+	scalar1 := cv.NewScalar(hLowThreshold, sLowThreshold, vLowThreshold, 1)
+	scalar2 := cv.NewScalar(hHighThreshold, sHighThreshold, vHighThreshold, 1)
+	cv.InRange(hueSat,
+		cv.NewMatFromScalar(scalar1, cv.MatTypeCV64F),
+		cv.NewMatFromScalar(scalar2, cv.MatTypeCV64F), &img)
 	return img
 }
