@@ -3,10 +3,13 @@ package handrec
 import (
 	"image"
 	"image/color"
+	"log"
 	"math"
 
 	cv "gocv.io/x/gocv"
 )
+
+var faceClassifier = "../configs/haarcascade_frontalface_default.xml"
 
 // HandPos contains the hand's information in the current frame.
 type HandPos struct {
@@ -22,6 +25,28 @@ type HandPos struct {
 // Detect searchs for a hand in the given image, if nothing is found an error is returned (?)
 func Detect(cap cv.Mat) (HandPos, error) {
 	return HandPos{}, nil
+}
+
+// RemoveBackground removes any unwanted elements in the given image.
+func RemoveBackground(img cv.Mat) cv.Mat {
+	// remove faces
+	classifier := cv.NewCascadeClassifier()
+	if !classifier.Load(faceClassifier) {
+		log.Println("cannot load face classifier in path ", faceClassifier)
+		return img
+	}
+
+	var faces []image.Rectangle
+	frameGrey := cv.NewMat()
+	cv.CvtColor(img, &frameGrey, cv.ColorBGRToGray)
+	cv.EqualizeHist(frameGrey, &frameGrey)
+	faces = classifier.DetectMultiScale(frameGrey)
+
+	for _, face := range faces {
+		cv.Rectangle(&img, face, color.RGBA{0, 0, 0, 0}, -1)
+	}
+
+	return img
 }
 
 // DetectSkinColor detects the user skin color and removes the rest.

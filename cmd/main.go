@@ -22,7 +22,9 @@ func main() {
 
 	for {
 		wc.Read(&img)
-		win.IMShow(hr.DetectSkinColor(img))
+		img = hr.RemoveBackground(img)
+		img = hr.DetectSkinColor(img)
+		win.IMShow(img)
 		win.WaitKey(1)
 	}
 }
