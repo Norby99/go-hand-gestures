@@ -24,21 +24,14 @@ func Detect(cap cv.Mat) (HandPos, error) {
 	return HandPos{}, nil
 }
 
-// SkinMask
-func SkinMask(img cv.Mat) cv.Mat {
-	return cv.NewMat()
-}
-
-// SkinColorSampler draws two rectangles on the given image.
+// DetectSkinColor detects the user skin color and removes the rest.
 func DetectSkinColor(img cv.Mat) cv.Mat {
 	r1Height := img.Size()[1] / 2
 	r2Height := img.Size()[1] / 3
-	rWidth := img.Size()[0] / 5
+	rWidth := img.Size()[0] / 4
 
 	rect1 := image.Rect(rWidth, r1Height, rWidth+20, r1Height+20)
 	rect2 := image.Rect(rWidth, r2Height, rWidth+20, r2Height+20)
-	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 1)
-	cv.Rectangle(&img, rect2, color.RGBA{238, 11, 11, 1}, 3)
 
 	hueSat := cv.NewMat()
 	cv.CvtColor(img, &hueSat, cv.ColorBGRToHSV)
@@ -46,7 +39,6 @@ func DetectSkinColor(img cv.Mat) cv.Mat {
 	sample1 := hueSat.Region(rect1)
 	sample2 := hueSat.Region(rect2)
 
-	// need to fix threshold values
 	hueMeanSample1 := sample1.Mean()
 	hueMeanSample2 := sample2.Mean()
 
@@ -60,5 +52,14 @@ func DetectSkinColor(img cv.Mat) cv.Mat {
 	scalar1 := cv.NewScalar(hLowThreshold, sLowThreshold, vLowThreshold, 0)
 	scalar2 := cv.NewScalar(hHighThreshold, sHighThreshold, vHighThreshold, 0)
 	cv.InRangeWithScalar(hueSat, scalar1, scalar2, &img)
+
+	cv.Rectangle(&img, rect1, color.RGBA{238, 11, 11, 1}, 1)
+	cv.Rectangle(&img, rect2, color.RGBA{238, 11, 11, 1}, 1)
+
+	// handle noise
+	morphStrElem := cv.GetStructuringElement(cv.MorphEllipse, image.Pt(3, 3))
+	dilateStrElem := cv.GetStructuringElement(cv.MorphRect, image.Pt(3, 3))
+	cv.MorphologyEx(img, &img, cv.MorphOpen, morphStrElem)
+	cv.Dilate(img, &img, dilateStrElem)
 	return img
 }
